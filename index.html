@@ -5,18 +5,11 @@
 </head>
 <body>
    <input id="auth" type="text">
-   <a href="#" onclick="FETCH.authenticate()">authenticate</a>
+   <a href="#" onclick="FETCH.authenticate( document.querySelector('#auth').value )">authenticate</a>
 
    <br>
    <input id="query" type="text">
-   <a href="#" onclick="FETCH.query()">query</a>
+   <a href="#" onclick="FETCH.query( document.querySelector('#query').value )">query</a>
 
-   <br>
-   <input id="sound" type="text">
-   <a href="#" onclick="FETCH.getSoundObject()">get sound</a>
-
-   <br>
-   <input id="download" type="text">
-   <a href="#" onclick="FETCH.download(loadSound)">download</a>
 </body>
 </html>

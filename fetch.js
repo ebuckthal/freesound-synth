@@ -5,21 +5,24 @@ var FETCH = (function() {
    var baseUrl = 'http://www.freesound.org/apiv2';
    var soundUrl = 'http://www.freesound.org/apiv2/sounds';
    var authUrl = 'https://www.freesound.org/apiv2/oauth2/access_token';
+   var nextQueryUrl;
 
    var clientId = 'e12e99c04ee8c2cd7bd9';
    var clientSecret = 'd0e64ec9b9f298f5bc84cc1344abc5e6feb4c21e';
 
    var oauth;
 
+   var soundObjects = [];
+   var sounds = [];
+   var cb;
+
    var isAuthenticated = function() {
       return (typeof oauth !== undefined);
    }
 
-   var authenticate = function() {
+   var authenticate = function(token) {
 
-      var token = document.querySelector('#auth').value;
-
-      if(!token) {
+      if(typeof token == null) {
          return false;
       }
 
@@ -46,47 +49,45 @@ var FETCH = (function() {
       req.send(params);
    }
 
-   var download = function(callback) {
+   var download = function(soundObject) {
 
       if(!isAuthenticated()) {
          console.log('Must be authenticated');
          return false;
       }
 
-      var url = document.querySelector('#download').value;
-
-      if(url == "") {
+      if(typeof soundObject == null) {
          return false;
       }
 
+      var url = soundObject.download;
+
       var req = new XMLHttpRequest();
       req.open('GET', url);
-
       req.setRequestHeader('Authorization', 'Bearer ' + oauth.access_token);
-
       req.responseType = 'arraybuffer';
 
       req.onload = function() {
 
-         //if(this.readyState !== 4) return;
-         //if(this.status !== 200) return;
-
          console.log(this.response);
 
-         callback(this.response);
+         sounds.push(this.response);
+
+         if(sounds.length == 8) {
+            console.log('callback happening!');
+            cb(sounds);
+         }
       };
 
       req.send();
    }
 
-   var getSoundObject = function() {
+   var getSoundObject = function(url) {
 
       if(!isAuthenticated()) {
          console.log('Must be authenticated');
          return false;
       }
-
-      var url = document.querySelector('#sound').value;
 
       if(url == "") {
          return false;
@@ -102,34 +103,43 @@ var FETCH = (function() {
          if(this.readyState !== 4) return;
          if(this.status !== 200) return;
 
-         console.log(this.responseText);
          var r = JSON.parse(this.responseText);
+         download(r);
 
-         console.log(r);
-
-         return r;
+         soundObjects.push(r);
       };
 
       req.send();
    }
 
-   var query = function() {
+   var query = function(query, callback) {
+
+      cb = callback;
 
       if(!isAuthenticated()) {
          console.log('Must be authenticated');
          return false;
       }
 
-      var query = document.querySelector('#query').value;
+      var queryUrl;
 
-      if(query == '') {
-         console.log('Invalid query');
-         return false;
+      if(!query) {
+
+         queryUrl = nextQueryUrl;
+
+         if(!queryUrl) {
+            console.log('Invalid query');
+            return false;
+         }
+
+      } else {
+
+         queryUrl = baseUrl + '/search/?query=' + query + '&f=duration:[1 TO 30]';
+
       }
 
       var req = new XMLHttpRequest();
-
-      req.open('GET', baseUrl + '/search/?query=' + query); 
+      req.open('GET', queryUrl); 
       req.setRequestHeader('Authorization', 'Bearer ' + oauth.access_token);
 
       req.onreadystatechange = function() {
@@ -139,10 +149,15 @@ var FETCH = (function() {
 
          var response = JSON.parse(this.responseText);
 
-         console.log(response);
+         nextQueryUrl = response.next;
 
-         return true;
+         console.log('nextQueryUrl: ' + nextQueryUrl);
+         //get 8 soundObjects
 
+         soundObjects = [];
+         for(var i = 0, sound; i < 8 && (sound = response.results[i++]);) {
+            getSoundObject(sound.uri);
+         }
       };
 
       req.send();
@@ -153,8 +168,7 @@ var FETCH = (function() {
       clientSecret: clientSecret,
       authenticate: authenticate,
       query: query,
-      getSoundObject: getSoundObject,
-      download: download
+      soundObjects: soundObjects
    }
 
 })();
