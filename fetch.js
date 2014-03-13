@@ -75,7 +75,10 @@ var FETCH = (function() {
 
          if(sounds.length == 8) {
             console.log('callback happening!');
-            cb(sounds);
+            
+            if(cb) {
+               cb(sounds);
+            }
          }
       };
 
@@ -134,7 +137,7 @@ var FETCH = (function() {
 
       } else {
 
-         queryUrl = baseUrl + '/search/?query=' + query + '&f=duration:[1 TO 30]';
+         queryUrl = baseUrl + '/search/?query=' + query + '&f=duration:[1 TO 3]';
 
       }
 
@@ -156,6 +159,7 @@ var FETCH = (function() {
 
          soundObjects = [];
          for(var i = 0, sound; i < 8 && (sound = response.results[i++]);) {
+            console.log('getting sound object: ' + i);
             getSoundObject(sound.uri);
          }
       };
@@ -168,7 +172,6 @@ var FETCH = (function() {
       clientSecret: clientSecret,
       authenticate: authenticate,
       query: query,
-      soundObjects: soundObjects
    }
 
 })();
