@@ -168,6 +168,30 @@ var FETCH = (function() {
       req.send();
    }
 
+   function getBuffers(urls, callback) {
+
+      var bufs = [];
+
+      for(var i = 0; i < urls.length; i++) {
+
+         var req = new XMLHttpRequest();
+         req.open('GET', urls[i]);
+         req.responseType = 'arraybuffer';
+
+         req.onload = function() {
+
+            bufs.push(this.response);
+
+            if(bufs.length == urls.length) {
+               console.log('callback happening!');
+               callback(bufs);
+            }
+         };
+
+         req.send();
+      }
+   }
+
    function downloadMP3(url, num, callback) {
 
       var req = new XMLHttpRequest();
@@ -221,7 +245,8 @@ var FETCH = (function() {
       clientSecret: clientSecret,
       authenticate: authenticate,
       query: query,
-      queryMP3: queryMP3
+      queryMP3: queryMP3,
+      getBuffers: getBuffers
    }
 
 })();

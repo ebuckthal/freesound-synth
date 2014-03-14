@@ -4,7 +4,7 @@ var SYNTH = (function(FETCH) {
    var context = new webkitAudioContext();
 
    var init = function(query) {
-      FETCH.quickQuery(function done(bufferList) {
+      FETCH.getBuffers(['cool.wav', 'cool.wav'], function done(bufferList) {
          for (var i = 0; i < bufferList.length; i++) {
             context.decodeAudioData(bufferList[i], function(audioBuffer) {
                voices.push(new Voice(audioBuffer));
