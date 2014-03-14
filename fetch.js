@@ -1,4 +1,3 @@
-var context = new webkitAudioContext(); 
 
 var FETCH = (function() {
 
@@ -15,6 +14,8 @@ var FETCH = (function() {
    var soundObjects = [];
    var sounds = [];
    var cb;
+
+   var NUM_SOUNDS = 1;
 
    var isAuthenticated = function() {
       return (typeof oauth !== undefined);
@@ -49,22 +50,18 @@ var FETCH = (function() {
       req.send(params);
    }
 
-   var download = function(soundObject) {
 
-      if(!isAuthenticated()) {
-         console.log('Must be authenticated');
+   var download = function(url, cb) {
+
+      if(typeof url == null) {
          return false;
       }
-
-      if(typeof soundObject == null) {
-         return false;
-      }
-
-      var url = soundObject.download;
 
       var req = new XMLHttpRequest();
       req.open('GET', url);
-      req.setRequestHeader('Authorization', 'Bearer ' + oauth.access_token);
+      if (oauth) {
+         req.setRequestHeader('Authorization', 'Bearer ' + oauth.access_token);
+      }
       req.responseType = 'arraybuffer';
 
       req.onload = function() {
@@ -73,7 +70,7 @@ var FETCH = (function() {
 
          sounds.push(this.response);
 
-         if(sounds.length == 8) {
+         if(sounds.length == NUM_SOUNDS) {
             console.log('callback happening!');
             
             if(cb) {
@@ -107,7 +104,7 @@ var FETCH = (function() {
          if(this.status !== 200) return;
 
          var r = JSON.parse(this.responseText);
-         download(r);
+         download(r.download);
 
          soundObjects.push(r);
       };
@@ -115,7 +112,9 @@ var FETCH = (function() {
       req.send();
    }
 
-   var query = function(query, callback) {
+   var query = function(query, callback)  {
+      soundObjects = [];
+      sounds = [];
 
       cb = callback;
 
@@ -137,7 +136,7 @@ var FETCH = (function() {
 
       } else {
 
-         queryUrl = baseUrl + '/search/?query=' + query + '&f=duration:[1 TO 3]';
+         queryUrl = baseUrl + '/search/?query=' + query + '&f=duration:[1 TO 2]';
 
       }
 
@@ -155,10 +154,10 @@ var FETCH = (function() {
          nextQueryUrl = response.next;
 
          console.log('nextQueryUrl: ' + nextQueryUrl);
-         //get 8 soundObjects
+         //get NUM_SOUNDS soundObjects
 
          soundObjects = [];
-         for(var i = 0, sound; i < 8 && (sound = response.results[i++]);) {
+         for(var i = 0, sound; i < NUM_SOUNDS && (sound = response.results[i++]);) {
             console.log('getting sound object: ' + i);
             getSoundObject(sound.uri);
          }
@@ -167,30 +166,20 @@ var FETCH = (function() {
       req.send();
    }
 
+   var quickQuery = function(callback) {
+      NUM_SOUNDS = 1;
+      download('cool.wav', callback);
+   }
+
+
    return {
       clientId: clientId,
       clientSecret: clientSecret,
       authenticate: authenticate,
       query: query,
+      quickQuery: quickQuery
    }
 
 })();
 
-window.open('https://www.freesound.org/apiv2/oauth2/authorize?client_id=' + FETCH.clientId + '&response_type=code', 'Window yo', 'width=400,height=300');
-
-var loadSound = function(arraybuffer) {
-
-   context.decodeAudioData(arraybuffer, function(buffer) {
-
-      var source = context.createBufferSource();
-      source.buffer = buffer;
-      source.connect(context.destination);
-      source.start(context.currentTime);
-
-   }, function(err) {
-
-      console.log('decodeAudioData error: ' + err);
-
-   });
-}
-      
+//window.open('https://www.freesound.org/apiv2/oauth2/authorize?client_id=' + FETCH.clientId + '&response_type=code', 'Window yo', 'width=400,height=300');
