@@ -1,11 +1,12 @@
-var context = new webkitAudioContext(); 
-
 var FETCH = (function() {
 
    var baseUrl = 'http://www.freesound.org/apiv2';
    var soundUrl = 'http://www.freesound.org/apiv2/sounds';
    var authUrl = 'https://www.freesound.org/apiv2/oauth2/access_token';
    var nextQueryUrl;
+
+   var v1baseUrl = 'http://www.freesound.org/api';
+   var v1queryUrl = 'http://www.freesound.org/api/sounds/search';
 
    var clientId = 'e12e99c04ee8c2cd7bd9';
    var clientSecret = 'd0e64ec9b9f298f5bc84cc1344abc5e6feb4c21e';
@@ -15,6 +16,8 @@ var FETCH = (function() {
    var soundObjects = [];
    var sounds = [];
    var cb;
+
+   var arrayBuffers = [];
 
    var isAuthenticated = function() {
       return (typeof oauth !== undefined);
@@ -167,30 +170,61 @@ var FETCH = (function() {
       req.send();
    }
 
+   function downloadMP3(url, num, callback) {
+
+      var req = new XMLHttpRequest();
+      req.open('GET', url);
+      req.responseType = 'arraybuffer';
+
+      req.onload = function() {
+
+         arrayBuffers.push(this.response);
+         console.log('pushing arraybuffer');
+
+         if(arrayBuffers.length == num) {
+            console.log('callback happening!');
+            callback(arrayBuffers);
+         }
+      };
+
+      req.send();
+   }
+
+   function queryMP3(query, num, callback) {
+
+      var queryUrl = v1queryUrl + '?query=' + query + '&duration=duration:[1 TO 3]' + '&api_key=' + clientSecret;
+
+      console.log(queryUrl);
+
+      var req = new XMLHttpRequest();
+      req.open('GET', queryUrl); 
+
+      req.onreadystatechange = function() {
+         if(this.readyState !== 4) return;
+         if(this.status !== 200) return;
+
+         var response = JSON.parse(this.responseText);
+
+         arrayBuffers = [];
+
+         for(var i = 0, sound; i < num && (sound = response.sounds[i++]);) {
+            console.log('downloading ' + i);
+            downloadMP3(sound['preview-lq-mp3'], num, callback);
+         }
+      }
+      req.send();
+
+      return true;
+
+   }
+
    return {
       clientId: clientId,
       clientSecret: clientSecret,
       authenticate: authenticate,
       query: query,
+      queryMP3: queryMP3
    }
 
 })();
 
-window.open('https://www.freesound.org/apiv2/oauth2/authorize?client_id=' + FETCH.clientId + '&response_type=code', 'Window yo', 'width=400,height=300');
-
-var loadSound = function(arraybuffer) {
-
-   context.decodeAudioData(arraybuffer, function(buffer) {
-
-      var source = context.createBufferSource();
-      source.buffer = buffer;
-      source.connect(context.destination);
-      source.start(context.currentTime);
-
-   }, function(err) {
-
-      console.log('decodeAudioData error: ' + err);
-
-   });
-}
-      
