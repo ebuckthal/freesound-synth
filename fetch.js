@@ -52,22 +52,18 @@ var FETCH = (function() {
       req.send(params);
    }
 
-   var download = function(soundObject) {
 
-      if(!isAuthenticated()) {
-         console.log('Must be authenticated');
+   var download = function(url, cb) {
+
+      if(typeof url == null) {
          return false;
       }
-
-      if(typeof soundObject == null) {
-         return false;
-      }
-
-      var url = soundObject.download;
 
       var req = new XMLHttpRequest();
       req.open('GET', url);
-      req.setRequestHeader('Authorization', 'Bearer ' + oauth.access_token);
+      if (oauth) {
+         req.setRequestHeader('Authorization', 'Bearer ' + oauth.access_token);
+      }
       req.responseType = 'arraybuffer';
 
       req.onload = function() {
@@ -76,7 +72,7 @@ var FETCH = (function() {
 
          sounds.push(this.response);
 
-         if(sounds.length == 8) {
+         if(sounds.length == NUM_SOUNDS) {
             console.log('callback happening!');
             
             if(cb) {
@@ -110,7 +106,7 @@ var FETCH = (function() {
          if(this.status !== 200) return;
 
          var r = JSON.parse(this.responseText);
-         download(r);
+         download(r.download);
 
          soundObjects.push(r);
       };
@@ -118,7 +114,9 @@ var FETCH = (function() {
       req.send();
    }
 
-   var query = function(query, callback) {
+   var query = function(query, callback)  {
+      soundObjects = [];
+      sounds = [];
 
       cb = callback;
 
@@ -140,7 +138,7 @@ var FETCH = (function() {
 
       } else {
 
-         queryUrl = baseUrl + '/search/?query=' + query + '&f=duration:[1 TO 3]';
+         queryUrl = baseUrl + '/search/?query=' + query + '&f=duration:[1 TO 2]';
 
       }
 
@@ -158,10 +156,10 @@ var FETCH = (function() {
          nextQueryUrl = response.next;
 
          console.log('nextQueryUrl: ' + nextQueryUrl);
-         //get 8 soundObjects
+         //get NUM_SOUNDS soundObjects
 
          soundObjects = [];
-         for(var i = 0, sound; i < 8 && (sound = response.results[i++]);) {
+         for(var i = 0, sound; i < NUM_SOUNDS && (sound = response.results[i++]);) {
             console.log('getting sound object: ' + i);
             getSoundObject(sound.uri);
          }
@@ -227,4 +225,3 @@ var FETCH = (function() {
    }
 
 })();
-
