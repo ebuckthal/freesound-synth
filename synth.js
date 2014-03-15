@@ -6,13 +6,22 @@ var SYNTH = (function(FETCH) {
    var init = function(query) {
       FETCH.getBuffers(['cool.wav', 'cool.wav'], function done(bufferList) {
          for (var i = 0; i < bufferList.length; i++) {
-            context.decodeAudioData(bufferList[i], function(audioBuffer) {
+            context.decodeAudioData(doubleBuff(bufferList[i]), function(audioBuffer) {
                voices.push(new Voice(audioBuffer));
 
             });
          }
       });
    };
+
+   function doubleBuff(src) {
+      var dst = new ArrayBuffer(src.byteLength * 2);
+
+      new Uint8Array(dst).set(new Uint8Array(src));
+      new Uint8Array(dst).set(new Uint8Array(src), src.byteLength);
+
+      return dst;
+   }
 
    window.onkeydown = function(evt) {
       switch (evt.keyCode) {
