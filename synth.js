@@ -1,16 +1,36 @@
-var SYNTH = (function(FETCH) {
+var SYNTH = (function(FETCH, dat, SimpleReverb) {
    var voices = [];
    var context = new webkitAudioContext();
+   var gui = new dat.GUI();
+   var settings = new function() { //for GUI
+      this.walkSpeed = 0;
+      this.grainSize = 0.1;
+   };
+
+   var walkSpeedChange = gui.add(settings, 'walkSpeed', -1, 1);
+   var grainSizeChange = gui.add(settings, 'grainSize', 0.01, 1);
+
+   walkSpeedChange.onChange(function(value) {
+      voices[0].walkSpeed = value * value * (value > 0 ? 1 : -1); 
+   });
+
+   grainSizeChange.onChange(function(value) {
+      voices[0].grainSize = value * value * value;
+   });
 
    var init = function(query) {
-      FETCH.getBuffers(['cool.wav', 'cool.wav'], function done(bufferList) {
+      voices = [];
+      FETCH.query(query, 1, function done(bufferList) {
+         console.log(bufferList);
          for (var i = 0; i < bufferList.length; i++) {
 
-            context.decodeAudioData(bufferList[i], function(audioBuffer) {
+
+            context.decodeAudioData(doubleBuff(bufferList[i]), function(audioBuffer) {
                voices.push(new Voice(audioBuffer));
             });
          }
       });
+
    };
 
    function doubleBuff(src) {
@@ -74,56 +94,82 @@ var SYNTH = (function(FETCH) {
 
    var step = function(timestamp) {
 
+      var seconds = timestamp / 1000;
+
       for(var i = 0; i < voices.length; i++) {
-         voices[i].checkWalk(timestamp);
+         if(voices[i].active) {
+            voices[i].checkWalk(seconds);
+         }
       }
 
       requestAnimationFrame(SYNTH.step);
    }
 
    function Voice(buffer) {
-      this.grainSize = 0.9;
-      this.walkSpeed = 0.1;
+      this.grainSize = 0.03;
+      this.walkSpeed = -0.2;
       this.audioBuffer = buffer;
-      this.loopStart = 0;
+      this.loopStart = 1;
+      this.timeStart;
+
    };
    
-   Voice.prototype.checkWalk = function(timestamp) {
+   Voice.prototype.checkWalk = function(seconds) {
 
-      if(!this.timeStart) this.timeStart = timestamp;
+      if(!this.timeStart) this.timeStart = seconds;
 
-      var progress = (timestamp - this.timeStart);
+      if((seconds - this.timeStart) > this.grainSize) {
+         this.timeStart = seconds;
 
-      console.log(progress);
-
-   }
-
-   Voice.prototype.walk = function() {
-      var voice = this;
-
-      this.walkTimer = setTimeout(function() {
-         voice.loopStart += voice.walkSpeed;
-
-         if (voice.loopStart >= voice.source.buffer.duration * 0.6) {
-            voice.loopStart -= (voice.source.buffer.duration * 0.5);
+         if(this.source.playbackRate.value != 1) { this.source.playbackRate.value = 1;
+            this.gain.gain.value = 1;
          }
 
-         voice.source.loopStart = voice.loopStart;
-         voice.source.loopEnd = voice.loopStart + voice.grainSize;
+         this.loopStart += this.walkSpeed * this.grainSize;
 
-         voice.walk();
-      }, voice.grainSize * 1000);
+         if(this.loopStart < this.grainSize) {
+            this.loopStart += this.source.buffer.duration * 0.5;
+            this.source.playbackRate.value = 1000000;
+            this.gain.gain.value = 0;
+         }
+
+         if(this.loopStart > this.source.buffer.duration * 0.5) {
+            this.loopStart -= this.source.buffer.duration * 0.5;
+         }
+
+
+         this.source.loopStart = this.loopStart;
+         this.source.loopEnd = this.loopStart + this.grainSize;
+
+         //console.log(this.source.loopStart + ' ' + this.source.loopEnd);
+      }
+
    }
 
    Voice.prototype.noteOn = function() {
 
-      this.timeStart;
-
+      this.gain = context.createGainNode();
+      this.verb = new SimpleReverb(context, { seconds: 2, decay: 5, reverse: 0 });
       this.source = context.createBufferSource();
+
+      console.log(this.verb);
+
+      this.gain.connect(this.verb.input);
+      this.verb.output.connect(context.destination);
+      this.source.connect(this.gain);
+
       this.source.buffer = this.audioBuffer;
+
+
       this.source.loopStart = this.loopStart;
       this.source.loopEnd = this.loopStart + this.grainSize;
       this.source.loop = true;
+
+      this.source.start(0, this.source.loopStart);
+
+      console.log('bufdur: ' + this.source.buffer.duration);
+      console.log('note on: ' + this.source.loopStart + ' ' + this.source.loopEnd);
+
       /*
       this.source1 = context.createBufferSource();
       this.gain1 = context.createGainNode();
@@ -152,7 +198,7 @@ var SYNTH = (function(FETCH) {
       this.source.start(0, this.source.loopStart);
       this.source2.start(0, this.source.loopStart);
       */
-      this.walk();
+      //this.walk();
    }
       
 
@@ -179,6 +225,6 @@ var SYNTH = (function(FETCH) {
       step:step
    };
 
-})(FETCH);
+})(FETCH, dat, SimpleReverb);
 
 requestAnimationFrame(SYNTH.step);

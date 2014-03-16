@@ -19,6 +19,8 @@ var FETCH = (function() {
 
    var arrayBuffers = [];
 
+   var NUM_SOUNDS = 1;
+
    var isAuthenticated = function() {
       return (typeof oauth !== undefined);
    }
@@ -53,7 +55,7 @@ var FETCH = (function() {
    }
 
 
-   var download = function(url, cb) {
+   var download = function(url) {
 
       if(typeof url == null) {
          return false;
@@ -75,9 +77,7 @@ var FETCH = (function() {
          if(sounds.length == NUM_SOUNDS) {
             console.log('callback happening!');
             
-            if(cb) {
-               cb(sounds);
-            }
+            cb(sounds);
          }
       };
 

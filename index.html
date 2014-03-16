@@ -1,8 +1,6 @@
 <!DOCTYPE html>
 <html>
 <head>
-   <script src="fetch.js"></script>
-   <script src="synth.js"></script>
 </head>
 <body>
    <input id="auth" type="text">
@@ -13,8 +11,12 @@
    <a href="#" onclick="FETCH.query( document.querySelector('#query').value )">query</a>
 
 </body>
+   <script src="reverb.js"></script>
+   <script src="dat.gui.min.js"></script>
+   <script src="fetch.js"></script>
+   <script src="synth.js"></script>
    <script>
-      //window.open('https://www.freesound.org/apiv2/oauth2/authorize?client_id=' + FETCH.clientId + '&response_type=code', 'Window yo', 'width=400,height=300');
-      SYNTH.init();
+      window.open('https://www.freesound.org/apiv2/oauth2/authorize?client_id=' + FETCH.clientId + '&response_type=code', 'Window yo', 'width=400,height=300');
+      //SYNTH.init('cool');
    </script>
 </html>
