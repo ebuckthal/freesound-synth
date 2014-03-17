@@ -55,7 +55,7 @@ var FETCH = (function() {
    }
 
 
-   var download = function(url) {
+   var download = function(url, callback) {
 
       if(typeof url == null) {
          return false;
@@ -76,8 +76,12 @@ var FETCH = (function() {
 
          if(sounds.length == NUM_SOUNDS) {
             console.log('callback happening!');
-            
-            cb(sounds);
+           
+            if(cb === undefined) {
+               callback(sounds);
+            } else {
+               cb(sounds);
+            }
          }
       };
 
@@ -155,7 +159,7 @@ var FETCH = (function() {
 
          nextQueryUrl = response.next;
 
-         console.log('nextQueryUrl: ' + nextQueryUrl);
+         //console.log('nextQueryUrl: ' + nextQueryUrl);
          //get NUM_SOUNDS soundObjects
 
          soundObjects = [];

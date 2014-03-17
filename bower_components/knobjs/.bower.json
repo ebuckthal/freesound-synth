@@ -1,0 +1,23 @@
+{
+  "name": "knobjs",
+  "version": "0.0.2",
+  "author": {
+    "name": "Russell McClellan"
+  },
+  "description": "Knob widget for music software in the browser",
+  "dependencies": {},
+  "devDependencies": {
+    "polymer-platform": "^0.1.1"
+  },
+  "homepage": "https://github.com/russellmcc/knobjs",
+  "_release": "0.0.2",
+  "_resolution": {
+    "type": "version",
+    "tag": "0.0.2",
+    "commit": "3934f9576caeb82d9fbb358ba27c60257d7d912a"
+  },
+  "_source": "git://github.com/russellmcc/knobjs.git",
+  "_target": "~0.0.2",
+  "_originalSource": "knobjs",
+  "_direct": true
+}

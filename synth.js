@@ -1,37 +1,29 @@
 var SYNTH = (function(FETCH, dat, SimpleReverb) {
    var voices = [];
    var context = new webkitAudioContext();
-   var gui = new dat.GUI();
-   var settings = new function() { //for GUI
-      this.walkSpeed = 0;
-      this.grainSize = 0.1;
-   };
 
-   var walkSpeedChange = gui.add(settings, 'walkSpeed', -1, 1);
-   var grainSizeChange = gui.add(settings, 'grainSize', 0.01, 1);
+   function initVoice(index) {
 
-   walkSpeedChange.onChange(function(value) {
-      voices[0].walkSpeed = value * value * (value > 0 ? 1 : -1); 
-   });
+      console.log(index);
+      FETCH.getBuffers(['cool.wav'], function done(bufferList) {
 
-   grainSizeChange.onChange(function(value) {
-      voices[0].grainSize = value * value * value;
-   });
+         context.decodeAudioData(doubleBuff(bufferList[0]), function(audioBuffer) {
 
-   var init = function(query) {
-      voices = [];
-      FETCH.query(query, 1, function done(bufferList) {
-         console.log(bufferList);
-         for (var i = 0; i < bufferList.length; i++) {
-
-
-            context.decodeAudioData(doubleBuff(bufferList[i]), function(audioBuffer) {
-               voices.push(new Voice(audioBuffer));
-            });
-         }
+            voices[index] = new Voice(audioBuffer, index);
+         });
       });
+   }
 
-   };
+   function queryVoice(query, index) {
+
+      FETCH.query(query, function(buffer) {
+
+         context.decodeAudioData(doubleBuff(buffer), function(audioBuffer) {
+
+            voices[index] = new Voice(audioBuffer, index);
+         });
+      });
+   }
 
    function doubleBuff(src) {
 
@@ -49,21 +41,6 @@ var SYNTH = (function(FETCH, dat, SimpleReverb) {
       dstDV.setUint32(40, srcChunkSize*2, true);
 
       return dst;
-   }
-
-   window.onkeydown = function(evt) {
-      switch (evt.keyCode) {
-         case (65): keyDown(0);break;
-         case (81): voices[0].setGrainSize(voices[0].grainSize + 0.1);break;
-         case (90): voices[0].setWalkSpeed(voices[0].walkSpeed + 0.1);break;
-         default: console.log(evt.keyCode);
-      }
-   }
-   window.onkeyup = function(evt) {
-      switch (evt.keyCode) {
-         case (65): keyUp(0);break;
-         default: console.log('lol');
-      }
    }
 
 
@@ -84,12 +61,10 @@ var SYNTH = (function(FETCH, dat, SimpleReverb) {
       if (!voices[voiceArrayIdx].active) {
          voices[voiceArrayIdx].active = true;
          voices[voiceArrayIdx].noteOn();
+      } else {
+         voices[voiceArrayIdx].active = false;
+         voices[voiceArrayIdx].noteOff();
       }
-   };
-
-   var keyUp = function(voiceArrayIdx) {
-      voices[voiceArrayIdx].noteOff();
-      voices[voiceArrayIdx].active = false;
    };
 
    var step = function(timestamp) {
@@ -105,29 +80,93 @@ var SYNTH = (function(FETCH, dat, SimpleReverb) {
       requestAnimationFrame(SYNTH.step);
    }
 
-   function Voice(buffer) {
-      this.grainSize = 0.03;
-      this.walkSpeed = -0.2;
+   function Voice(buffer, index) {
+      this.index = index;
       this.audioBuffer = buffer;
-      this.loopStart = 1;
+      this.loopStart = 0;
       this.timeStart;
+      this.walkSpeed = 0;
+      this.grainSize = 0.2;
 
+      console.log('canvas-'+index);
+      this.ctxWave = document.getElementById('canvas-' + index).getContext('2d');
+      this.ctxPosition= document.getElementById('canvas-' + index +'b').getContext('2d');
+      
+      this.grainSizeKnob = document.getElementById('knob-grainsize-'+this.index);
+      this.grainSizeKnob.addEventListener('change', this.onGrainSizeChange(this));
+
+      this.walkSpeedKnob = document.getElementById('knob-walkspeed-'+this.index);
+      this.walkSpeedKnob.addEventListener('change', this.onWalkSpeedChange(this));
+
+      this.onWalkSpeedChange(this);
+      this.onGrainSizeChange(this);
+
+
+      this.peaks = this.getPeaks(800);
+      this.drawWave(this.peaks);
+   }
+
+   Voice.prototype.onWalkSpeedChange = function(that) {
+      return function() {
+         that.walkSpeed = +(this.value) * +(this.value) * +(this.value);
+         console.log(that.walkSpeed);
+      }
+   }
+
+   Voice.prototype.onGrainSizeChange = function(that) {
+      var knob = this;
+      return function() {
+         that.grainSize = +(this.value) * +(this.value) * +(this.value);
+         console.log(that.grainSize);
+      }
+   }
+
+   Voice.prototype.drawWave = function(peaks) {
+      this.ctxWave.clearRect(0,0,800,100);
+
+      this.ctxWave.fillStyle = "red";
+
+      var max = 0.8;
+      var coef = 200 / max;
+      var halfH = 100 / 2;
+
+      this.ctxWave.beginPath();
+      this.ctxWave.moveTo(0, halfH);
+
+      for(var i = 0; i < this.peaks.length; i ++) {
+         var h = Math.round(this.peaks[i] * coef);
+         this.ctxWave.lineTo(i, halfH + h);
+      }
+
+      this.ctxWave.lineTo(0,halfH);
+
+      for(var i = 0; i < this.peaks.length; i ++) {
+         var h = Math.round(this.peaks[i] * coef);
+         this.ctxWave.lineTo(i, halfH - h);
+      }
+
+      this.ctxWave.lineTo(0,halfH);
+      this.ctxWave.fill();
    };
    
+
    Voice.prototype.checkWalk = function(seconds) {
+      var grainSize = this.grainSize;
+      var walkSpeed = this.walkSpeed;
 
       if(!this.timeStart) this.timeStart = seconds;
 
-      if((seconds - this.timeStart) > this.grainSize) {
+      if((seconds - this.timeStart) > grainSize) {
          this.timeStart = seconds;
 
-         if(this.source.playbackRate.value != 1) { this.source.playbackRate.value = 1;
+         if(this.source.playbackRate.value != 1) { 
+            this.source.playbackRate.value = 1;
             this.gain.gain.value = 1;
          }
 
-         this.loopStart += this.walkSpeed * this.grainSize;
+         this.loopStart += walkSpeed * grainSize;
 
-         if(this.loopStart < this.grainSize) {
+         if(this.loopStart < grainSize && walkSpeed < 0) {
             this.loopStart += this.source.buffer.duration * 0.5;
             this.source.playbackRate.value = 1000000;
             this.gain.gain.value = 0;
@@ -139,11 +178,23 @@ var SYNTH = (function(FETCH, dat, SimpleReverb) {
 
 
          this.source.loopStart = this.loopStart;
-         this.source.loopEnd = this.loopStart + this.grainSize;
+         this.source.loopEnd = this.loopStart + grainSize;
 
-         //console.log(this.source.loopStart + ' ' + this.source.loopEnd);
       }
 
+      var position = (this.source.loopStart / this.source.buffer.duration) * 800;
+
+      this.ctxPosition.clearRect(0,0,800,300);
+      this.ctxPosition.fillStyle = "black";
+
+      this.ctxPosition.beginPath();
+      this.ctxPosition.moveTo(position, 0);
+      this.ctxPosition.lineTo(position, 300);
+      this.ctxPosition.lineTo(position+2, 300);
+      this.ctxPosition.lineTo(position+2, 0);
+      this.ctxPosition.lineTo(position, 0);
+
+      this.ctxPosition.fill();
    }
 
    Voice.prototype.noteOn = function() {
@@ -169,36 +220,6 @@ var SYNTH = (function(FETCH, dat, SimpleReverb) {
 
       console.log('bufdur: ' + this.source.buffer.duration);
       console.log('note on: ' + this.source.loopStart + ' ' + this.source.loopEnd);
-
-      /*
-      this.source1 = context.createBufferSource();
-      this.gain1 = context.createGainNode();
-
-      this.source1.connect(this.gain1);
-      this.gain1.connect(context.destination);
-
-      this.source1.buffer = this.audioBuffer;
-      this.source1.loopStart = this.loopStart;
-      this.source1.loopEnd = this.loopStart + this.grainSize;
-      this.source1.loop = true;
-
-      this.source2 = context.createBufferSource();
-      this.gain2 = context.createGainNode();
-
-      this.source2.connect(this.gain2);
-      this.gain2.connect(context.destination);
-
-      this.source2.buffer = this.audioBuffer;
-      this.source2.loopStart = this.loopStart;
-      this.source2.loopEnd = this.loopStart + this.grainSize;
-      this.source2.loop = true;
-
-      this.crossfade = 0;
-
-      this.source.start(0, this.source.loopStart);
-      this.source2.start(0, this.source.loopStart);
-      */
-      //this.walk();
    }
       
 
@@ -207,22 +228,54 @@ var SYNTH = (function(FETCH, dat, SimpleReverb) {
       this.source.stop();
    };
 
-   Voice.prototype.setGrainSize = function(value) {
-      this.source.loopEnd = value + this.source.loopStart;
-   };
 
-   Voice.prototype.setWalkSpeed = function(value) {
-      this.walkSpeed = value;
-   };
+   Voice.prototype.getPeaks = function (length) {
+      var buffer = this.audioBuffer;
+      var sampleSize = Math.ceil(buffer.length / length);
+      var sampleStep = ~~(sampleSize / 10);
+      var channels = buffer.numberOfChannels;
+      var peaks = new Float32Array(length);
+
+      for (var c = 0; c < channels; c++) {
+         var chan = buffer.getChannelData(c);
+         for (var i = 0; i < length; i++) {
+               var start = ~~(i * sampleSize);
+               var end = start + sampleSize;
+               var peak = 0;
+
+               for (var j = start; j < end; j += sampleStep) {
+                  var value = chan[j];
+                  if (value > peak) {
+                     peak = value;
+                  } else if (-value > peak) {
+                     peak = -value;
+                  }
+               }
+
+               if (c > 0) {
+                  peaks[i] += peak;
+               } else {
+                  peaks[i] = peak;
+               }
+
+               // Average peak between channels
+               if (c == channels - 1) {
+                  peaks[i] = peaks[i] / channels;
+               }
+         }
+      }
+
+      return peaks;
+   }
 
 
    return {
-      init:init,
-      keyDown:keyDown,
       setGrainSize:setGrainSize,
       setWalkSpeed:setWalkSpeed,
-      keyUp:keyUp,
-      step:step
+      keyDown:keyDown,
+      step:step,
+      queryVoice: queryVoice,
+      initVoice: initVoice,
    };
 
 })(FETCH, dat, SimpleReverb);
