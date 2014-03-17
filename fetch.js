@@ -25,7 +25,7 @@ var FETCH = (function() {
       return (typeof oauth !== undefined);
    }
 
-   var authenticate = function(token) {
+   var authenticate = function(token, cb) {
 
       if(typeof token == null) {
          return false;
@@ -48,6 +48,9 @@ var FETCH = (function() {
          console.log(oauth);
          console.log('Authentication successful!');
 
+         if (cb) {
+            cb();
+         }
          return true;
       };
 

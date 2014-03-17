@@ -2,39 +2,63 @@
 <html>
 <head>
    <link rel="stylesheet" href="bower_components/knobjs/knobjs.css"></link>
+   <link rel="stylesheet" href="style.css"></link>
    <script src="bower_components/knobjs/knob.min.js"></script>
 </head>
 <body>
-      <input id="auth" type="text">
-      <a href="#" onclick="FETCH.authenticate( document.querySelector('#auth').value )">authenticate</a>
-
+      <h1> YO-MOM-SYNTH </h1>
+      <h3> FREESOUND GRANULAR SYNTHESIZER<h3>
+      <iframe src='' height=60px width=350px></iframe>
+      <br />
+      <p>
+         <input id="auth" type="text">
+         <button class="auth"
+            onclick= "FETCH.authenticate( 
+               document.querySelector('#auth').value,
+               function() {
+                  var authButton = document.querySelector('.auth');
+                  authButton.style.backgroundColor = '#3d3';
+                  authButton.style.color = '#333';
+                  authButton.innerHTML = 'authenticated';
+               }
+            )">
+         authenticate</button>
+      </p>
    <div style="position: relative; height: 100px;">
-      <button id="query-0">query</button>
       <button id="init-0">init locally</button>
+      <button id="query-0">query</button>
       <input id="search-0" type="text">
-      <canvas id="canvas-0" width=800 height=100 style="position: absolute; top: 0; left: 500px;"></canvas>
-      <canvas id="canvas-0b" width=800 height=100 style="position: absolute; top: 0; left: 500px;"></canvas>
+      <canvas id="canvas-0" width=800 height=100 
+         style="position: absolute; top: 0; left: 550px;"></canvas>
+      <canvas id="canvas-0b" width=800 height=100 
+         style="position: absolute; top: 0; left: 550px;"></canvas>
    </div>
    <div style="position: relative; height: 100px;">
-      <button id="query-1">query</button>
       <button id="init-1">init locally</button>
+      <button id="query-1">query</button>
       <input id="search-1" type="text">
-      <canvas id="canvas-1" width=800 height=100 style="position: absolute; top: 0; left: 500px;"></canvas>
-      <canvas id="canvas-1b" width=800 height=100 style="position: absolute; top: 0; left: 500px;"></canvas>
+      <canvas id="canvas-1" width=800 height=100 
+         style="position: absolute; top: 0; left: 550px;"></canvas>
+      <canvas id="canvas-1b" width=800 height=100 
+         style="position: absolute; top: 0; left: 550px;"></canvas>
    </div>
    <div style="position: relative; height: 100px;">
-      <button id="query-2">query</button>
       <button id="init-2">init locally</button>
+      <button id="query-2">query</button>
       <input id="search-2" type="text">
-      <canvas id="canvas-2" width=800 height=100 style="position: absolute; top: 0; left: 500px;"></canvas>
-      <canvas id="canvas-2b" width=800 height=100 style="position: absolute; top: 0; left: 500px;"></canvas>
+      <canvas id="canvas-2" width=800 height=100 
+         style="position: absolute; top: 0; left: 550px;"></canvas>
+      <canvas id="canvas-2b" width=800 height=100 
+         style="position: absolute; top: 0; left: 550px;"></canvas>
    </div>
    <div style="position: relative; height: 100px;">
-      <button id="query-3">query</button>
       <button id="init-3">init locally</button>
+      <button id="query-3">query</button>
       <input id="search-3" type="text">
-      <canvas id="canvas-3" width=800 height=100 style="position: absolute; top: 0; left: 500px;"></canvas>
-      <canvas id="canvas-3b" width=800 height=100 style="position: absolute; top: 0; left: 500px;"></canvas>
+      <canvas id="canvas-3" width=800 height=100 
+         style="position: absolute; top: 0; left: 550px;"></canvas>
+      <canvas id="canvas-3b" width=800 height=100 
+         style="position: absolute; top: 0; left: 550px;"></canvas>
    </div>
 
 </body>
@@ -43,36 +67,57 @@
    <script src="fetch.js"></script>
    <script src="synth.js"></script>
    <script>
-      //window.open('https://www.freesound.org/apiv2/oauth2/authorize?client_id=' + FETCH.clientId + '&response_type=code', 'Window yo', 'width=400,height=300');
+
+      //put authentication code in iframe
+      document.getElementsByTagName('iframe')[0].setAttribute('src','https://www.freesound.org/apiv2/oauth2/authorize?client_id=' + FETCH.clientId + '&response_type=code', 'Window yo', 'width=400,height=300');
+
       //SYNTH.init('cool');
 
+      var grainSizeKnobs = [];
+      var walkSpeedKnobs = [];
       for(var i = 0; i < 4; i++) {
+
          document.querySelector('#query-' + i).onclick = function() { 
             SYNTH.queryVoice(document.querySelector('#search-0').value, i); 
          }
          
-         var initVoice = function(idx) { 
+         var initVoice = function(idx) {
             return function() {
                SYNTH.initVoice(idx);
-            }
-         };
+               walkSpeedKnobs[idx].style.display = 'inline-block';
+               grainSizeKnobs[idx].style.display = 'inline-block';
+            };
+         }
 
          document.querySelector('#init-' + i).onclick = initVoice(i);
          
+         var DEFAULT_GRAINSIZE = 0.5;
+         var DEFAULT_WALKSPEED = 0.5;
          var MIN_GRAINSIZE = 0.025;
          var MIN_GRAINSIZE_CUBEROOT = 0.292401;
+         var MAX_GRAINSIZE_CUBEROOT = 0.9;
+         var MIN_WALKSPEED = -1;
+         var MAX_WALKSPEED = 1;
+         var THROW_LENGTH = 100;
 
          var div = document.querySelector('#query-' + i).parentNode;
-         var knob = document.createElement('x-knobjs-knob');
-         knob.setAttribute('id', 'knob-grainsize-' + i);
-         knob.setAttribute('min', MIN_GRAINSIZE_CUBEROOT);
-         knob.setAttribute('max', .9);
-         var knob2 = document.createElement('x-knobjs-knob');
-         knob2.setAttribute('id', 'knob-walkspeed-' + i);
-         knob2.setAttribute('min', -1);
-         knob2.setAttribute('max', 1);
-         div.appendChild(knob);
-         div.appendChild(knob2);
+         grainSizeKnobs[i] = document.createElement('x-knobjs-knob');
+         grainSizeKnobs[i].setAttribute('id', 'knob-grainsize-' + i);
+         grainSizeKnobs[i].setAttribute('value', DEFAULT_GRAINSIZE);
+         grainSizeKnobs[i].setAttribute('min', MIN_GRAINSIZE_CUBEROOT);
+         grainSizeKnobs[i].setAttribute('max', MAX_GRAINSIZE_CUBEROOT);
+         grainSizeKnobs[i].setAttribute('throw', THROW_LENGTH );
+
+         walkSpeedKnobs[i] = document.createElement('x-knobjs-knob');
+         walkSpeedKnobs[i].setAttribute('id', 'knob-walkspeed-' + i);
+         walkSpeedKnobs[i].setAttribute('value', DEFAULT_WALKSPEED);
+         walkSpeedKnobs[i].setAttribute('min', MIN_WALKSPEED);
+         walkSpeedKnobs[i].setAttribute('max', MAX_WALKSPEED);
+         walkSpeedKnobs[i].setAttribute('throw', THROW_LENGTH );
+
+
+         div.appendChild(grainSizeKnobs[i]);
+         div.appendChild(walkSpeedKnobs[i]);
 
       }
 
