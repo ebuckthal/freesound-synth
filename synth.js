@@ -85,8 +85,8 @@ var SYNTH = (function(FETCH, dat, SimpleReverb) {
       this.audioBuffer = buffer;
       this.loopStart = 0;
       this.timeStart;
-      this.walkSpeed = 0;
-      this.grainSize = 0.2;
+      this.walkSpeed;
+      this.grainSize;
 
       console.log('canvas-'+index);
       this.ctxWave = document.getElementById('canvas-' + index).getContext('2d');
@@ -98,8 +98,13 @@ var SYNTH = (function(FETCH, dat, SimpleReverb) {
       this.walkSpeedKnob = document.getElementById('knob-walkspeed-'+this.index);
       this.walkSpeedKnob.addEventListener('change', this.onWalkSpeedChange(this));
 
-      this.onWalkSpeedChange(this);
-      this.onGrainSizeChange(this);
+      this.walkSpeed = +(this.walkSpeedKnob.value) * 
+         +(this.walkSpeedKnob.value) * 
+         +(this.walkSpeedKnob.value);
+
+      this.grainSize = +(this.grainSizeKnob.value) * 
+         +(this.grainSizeKnob.value) * 
+         +(this.grainSizeKnob.value);
 
 
       this.peaks = this.getPeaks(800);
@@ -109,7 +114,7 @@ var SYNTH = (function(FETCH, dat, SimpleReverb) {
    Voice.prototype.onWalkSpeedChange = function(that) {
       return function() {
          that.walkSpeed = +(this.value) * +(this.value) * +(this.value);
-         console.log(that.walkSpeed);
+         //console.log(that.walkSpeed);
       }
    }
 
@@ -117,14 +122,14 @@ var SYNTH = (function(FETCH, dat, SimpleReverb) {
       var knob = this;
       return function() {
          that.grainSize = +(this.value) * +(this.value) * +(this.value);
-         console.log(that.grainSize);
+         //console.log(that.grainSize);
       }
    }
 
    Voice.prototype.drawWave = function(peaks) {
       this.ctxWave.clearRect(0,0,800,100);
 
-      this.ctxWave.fillStyle = "red";
+      this.ctxWave.fillStyle = "#333";
 
       var max = 0.8;
       var coef = 200 / max;
@@ -133,17 +138,20 @@ var SYNTH = (function(FETCH, dat, SimpleReverb) {
       this.ctxWave.beginPath();
       this.ctxWave.moveTo(0, halfH);
 
-      for(var i = 0; i < this.peaks.length; i ++) {
+      for(var i = 0; i < this.peaks.length/2; i ++) {
          var h = Math.round(this.peaks[i] * coef);
          this.ctxWave.lineTo(i, halfH + h);
       }
+      this.ctxWave.lineTo(400, halfH);
 
       this.ctxWave.lineTo(0,halfH);
 
-      for(var i = 0; i < this.peaks.length; i ++) {
+      for(var i = 0; i < this.peaks.length/2; i ++) {
          var h = Math.round(this.peaks[i] * coef);
          this.ctxWave.lineTo(i, halfH - h);
       }
+
+      this.ctxWave.lineTo(400, halfH);
 
       this.ctxWave.lineTo(0,halfH);
       this.ctxWave.fill();
@@ -156,17 +164,18 @@ var SYNTH = (function(FETCH, dat, SimpleReverb) {
 
       if(!this.timeStart) this.timeStart = seconds;
 
+      if(this.source.playbackRate.value != 1) { 
+         this.source.playbackRate.value = 1;
+         this.gain.gain.value = 1;
+      }
+
       if((seconds - this.timeStart) > grainSize) {
          this.timeStart = seconds;
 
-         if(this.source.playbackRate.value != 1) { 
-            this.source.playbackRate.value = 1;
-            this.gain.gain.value = 1;
-         }
 
          this.loopStart += walkSpeed * grainSize;
 
-         if(this.loopStart < grainSize && walkSpeed < 0) {
+         if(this.loopStart + (walkSpeed * grainSize) < 0) {
             this.loopStart += this.source.buffer.duration * 0.5;
             this.source.playbackRate.value = 1000000;
             this.gain.gain.value = 0;
@@ -180,21 +189,46 @@ var SYNTH = (function(FETCH, dat, SimpleReverb) {
          this.source.loopStart = this.loopStart;
          this.source.loopEnd = this.loopStart + grainSize;
 
+
+         //console.log(this.source.loopStart + ' ' + this.source.loopEnd);
+
+         var position = (this.source.loopStart / this.source.buffer.duration) * 800;
+         var grainsizewidth = (grainSize / this.source.buffer.duration) * 800;
+
+         this.ctxPosition.clearRect(0,0,800,300);
+         this.ctxPosition.fillStyle = "rgba(255,255,255,0.7);";
+
+         if(position+grainsizewidth > 400) {
+
+            console.log('two rects');
+
+            this.ctxPosition.beginPath();
+            this.ctxPosition.moveTo(position, 0);
+            this.ctxPosition.lineTo(position, 300-1);
+            this.ctxPosition.lineTo(400, 300-1);
+            this.ctxPosition.lineTo(400, 0);
+            this.ctxPosition.lineTo(position, 0);
+            this.ctxPosition.fill();
+
+            this.ctxPosition.beginPath();
+            this.ctxPosition.moveTo(0, 0);
+            this.ctxPosition.lineTo(0, 300-1);
+            this.ctxPosition.lineTo(position+grainsizewidth-400, 300-1);
+            this.ctxPosition.lineTo(position+grainsizewidth-400, 0);
+            this.ctxPosition.lineTo(0, 0);
+            this.ctxPosition.fill();
+
+         } else {
+
+            this.ctxPosition.beginPath();
+            this.ctxPosition.moveTo(position, 0);
+            this.ctxPosition.lineTo(position, 300-1);
+            this.ctxPosition.lineTo(position+grainsizewidth, 300-1);
+            this.ctxPosition.lineTo(position+grainsizewidth, 0);
+            this.ctxPosition.lineTo(position, 0);
+            this.ctxPosition.fill();
+         }
       }
-
-      var position = (this.source.loopStart / this.source.buffer.duration) * 800;
-
-      this.ctxPosition.clearRect(0,0,800,300);
-      this.ctxPosition.fillStyle = "black";
-
-      this.ctxPosition.beginPath();
-      this.ctxPosition.moveTo(position, 0);
-      this.ctxPosition.lineTo(position, 300);
-      this.ctxPosition.lineTo(position+2, 300);
-      this.ctxPosition.lineTo(position+2, 0);
-      this.ctxPosition.lineTo(position, 0);
-
-      this.ctxPosition.fill();
    }
 
    Voice.prototype.noteOn = function() {
