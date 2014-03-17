@@ -77,15 +77,20 @@
       var walkSpeedKnobs = [];
       for(var i = 0; i < 4; i++) {
 
-         document.querySelector('#query-' + i).onclick = function() { 
-            SYNTH.queryVoice(document.querySelector('#search-0').value, i); 
-         }
+         document.querySelector('#query-' + i).onclick = initVoice(i, true);
          
-         var initVoice = function(idx) {
+         var initVoice = function(idx, isQuery) {
             return function() {
-               SYNTH.initVoice(idx);
+
                walkSpeedKnobs[idx].style.display = 'inline-block';
                grainSizeKnobs[idx].style.display = 'inline-block';
+
+               if (isQuery) {
+                  SYNTH.queryVoice(document.querySelector('#search-0').value, idx); 
+               }
+               else {
+                  SYNTH.initVoice(idx);
+               }
             };
          }
 
