@@ -85,7 +85,7 @@
                grainSizeKnobs[idx].style.display = 'inline-block';
 
                if (isQuery) {
-                  SYNTH.queryVoice(document.querySelector('#search-0').value, idx); 
+                  SYNTH.queryVoice(document.querySelector('#search-' + idx).value, idx); 
                }
                else {
                   SYNTH.initVoice(idx);

@@ -73,18 +73,12 @@ var FETCH = (function() {
 
       req.onload = function() {
 
-         console.log(this.response);
-
-         sounds.push(this.response);
-
-         if(sounds.length == NUM_SOUNDS) {
-            console.log('callback happening!');
-           
-            if(cb === undefined) {
-               callback(sounds);
-            } else {
-               cb(sounds);
-            }
+         console.log('callback happening!');
+         
+         if(cb === undefined) {
+            callback(this.response);
+         } else {
+            cb(this.response);
          }
       };
 
@@ -162,41 +156,35 @@ var FETCH = (function() {
 
          nextQueryUrl = response.next;
 
+         var sound = response.results[Math.floor(Math.random() * 15)];
+
          //console.log('nextQueryUrl: ' + nextQueryUrl);
          //get NUM_SOUNDS soundObjects
+         //
+         //
+         console.log(sound.uri);
 
-         soundObjects = [];
-         for(var i = 0, sound; i < NUM_SOUNDS && (sound = response.results[i++]);) {
-            console.log('getting sound object: ' + i);
-            getSoundObject(sound.uri);
-         }
+         getSoundObject(sound.uri);
       };
 
       req.send();
    }
 
-   function getBuffers(urls, callback) {
+   function getBuffers(url, callback) {
 
       var bufs = [];
 
-      for(var i = 0; i < urls.length; i++) {
+      var req = new XMLHttpRequest();
+      req.open('GET', url);
+      req.responseType = 'arraybuffer';
 
-         var req = new XMLHttpRequest();
-         req.open('GET', urls[i]);
-         req.responseType = 'arraybuffer';
+      req.onload = function() {
 
-         req.onload = function() {
+         console.log('callback happening!');
+         callback(this.response);
+      };
 
-            bufs.push(this.response);
-
-            if(bufs.length == urls.length) {
-               console.log('callback happening!');
-               callback(bufs);
-            }
-         };
-
-         req.send();
-      }
+      req.send();
    }
 
    function downloadMP3(url, num, callback) {

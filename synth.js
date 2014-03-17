@@ -5,9 +5,9 @@ var SYNTH = (function(FETCH, dat, SimpleReverb) {
    function initVoice(index) {
 
       console.log(index);
-      FETCH.getBuffers(['cool.wav'], function done(bufferList) {
+      FETCH.getBuffers('cool.wav', function done(buffer) {
 
-         context.decodeAudioData(doubleBuff(bufferList[0]), function(audioBuffer) {
+         context.decodeAudioData(doubleBuff(buffer), function(audioBuffer) {
 
             voices[index] = new Voice(audioBuffer, index);
          });
@@ -131,7 +131,7 @@ var SYNTH = (function(FETCH, dat, SimpleReverb) {
 
       this.ctxWave.fillStyle = "#333";
 
-      var max = 0.8;
+      var max = 2;
       var coef = 200 / max;
       var halfH = 100 / 2;
 
@@ -139,7 +139,7 @@ var SYNTH = (function(FETCH, dat, SimpleReverb) {
       this.ctxWave.moveTo(0, halfH);
 
       for(var i = 0; i < this.peaks.length/2; i ++) {
-         var h = Math.round(this.peaks[i] * coef);
+         var h = Math.round(Math.pow(this.peaks[i],0.5) * coef);
          this.ctxWave.lineTo(i, halfH + h);
       }
       this.ctxWave.lineTo(400, halfH);
@@ -196,7 +196,7 @@ var SYNTH = (function(FETCH, dat, SimpleReverb) {
          var grainsizewidth = (grainSize / this.source.buffer.duration) * 800;
 
          this.ctxPosition.clearRect(0,0,800,300);
-         this.ctxPosition.fillStyle = "rgba(255,255,255,0.7);";
+         this.ctxPosition.fillStyle = "rgba(200,200,200,0.7);";
 
          if(position+grainsizewidth > 400) {
 
