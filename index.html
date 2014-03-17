@@ -6,24 +6,24 @@
    <script src="bower_components/knobjs/knob.min.js"></script>
 </head>
 <body>
-      <h1> YO-MOM-SYNTH </h1>
-      <h3> FREESOUND GRANULAR SYNTHESIZER<h3>
-      <iframe src='' height=60px width=350px></iframe>
-      <br />
-      <p>
-         <input id="auth" type="text">
-         <button class="auth"
-            onclick= "FETCH.authenticate( 
-               document.querySelector('#auth').value,
-               function() {
-                  var authButton = document.querySelector('.auth');
-                  authButton.style.backgroundColor = '#3d3';
-                  authButton.style.color = '#333';
-                  authButton.innerHTML = 'authenticated';
-               }
-            )">
-         authenticate</button>
-      </p>
+   <h1> YO-MOM-SYNTH </h1>
+   <h3> FREESOUND GRANULAR SYNTHESIZER<h3>
+   <iframe src='' height=60px width=350px></iframe>
+   <p>
+      <input id="auth" type="text">
+      <button class="auth"
+         onclick= "FETCH.authenticate( 
+            document.querySelector('#auth').value,
+            function() {
+               var authButton = document.querySelector('.auth');
+               authButton.style.backgroundColor = '#3d3';
+               authButton.style.color = '#333';
+               authButton.innerHTML = 'authenticated';
+            }
+         )">
+      authenticate</button>
+   </p>
+   <br />
    <div style="position: relative; height: 100px;">
       <button id="init-0">init locally</button>
       <button id="query-0">query</button>
@@ -77,7 +77,6 @@
       var walkSpeedKnobs = [];
       for(var i = 0; i < 4; i++) {
 
-         document.querySelector('#query-' + i).onclick = initVoice(i, true);
          
          var initVoice = function(idx, isQuery) {
             return function() {
@@ -94,6 +93,7 @@
             };
          }
 
+         document.querySelector('#query-' + i).onclick = initVoice(i, true);
          document.querySelector('#init-' + i).onclick = initVoice(i);
          
          var DEFAULT_GRAINSIZE = 0.5;
@@ -128,12 +128,17 @@
 
 
       window.onkeydown = function(evt) {
-         switch (evt.keyCode) {
-            case (65): SYNTH.keyDown(0);break;
-            case (83): SYNTH.keyDown(1);break;
-            case (68): SYNTH.keyDown(2);break;
-            case (70): SYNTH.keyDown(3);break;
-            default: console.log(evt.keyCode);
+         var aE = document.activeElement;
+         console.log(aE);
+         console.log(aE.tagName);
+         if (aE.tagName != 'INPUT') {
+            switch (evt.keyCode) {
+               case (65): SYNTH.keyDown(0);break;
+               case (83): SYNTH.keyDown(1);break;
+               case (68): SYNTH.keyDown(2);break;
+               case (70): SYNTH.keyDown(3);break;
+               default: console.log(evt.keyCode);
+            }
          }
       }
 
